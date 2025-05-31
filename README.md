@@ -1,6 +1,20 @@
-# Open Deep Research Web
+# Open Deep Research Web - Source Code
 
-A web application that leverages Together AI API to provide comprehensive research reports on any topic. It uses React for the frontend and FastAPI for the backend.
+This branch contains the source code for both the frontend and backend components of the Open Deep Research web application.
+
+## Project Structure
+
+### Backend Source Code
+
+- `backend/main.py`: FastAPI server setup and API endpoints
+- `backend/together_open_deep_research.py`: Core implementation for research generation
+- `backend/configs/open_deep_researcher_config.yaml`: Configuration settings
+
+### Frontend Source Code
+
+- `frontend/src/App.js`: Main React component with UI implementation
+- `frontend/src/index.js`: React application entry point
+- `frontend/src/index.css`: Global CSS and tailwind imports
 
 ## Features
 
@@ -8,30 +22,13 @@ A web application that leverages Together AI API to provide comprehensive resear
 - Automatic summary generation
 - Beautiful UI with pop-up modal for summaries
 - Detailed full reports with expandable sections
-- Responsive design
-
-## Technology Stack
-
-### Backend
-- FastAPI
-- Together AI API
-- Python 3.12
-- Pydantic for data validation
-- Docker for containerization
-
-### Frontend
-- React
-- Tailwind CSS with Typography plugin
-- React Modal
-- Heroicons
-- Docker with Nginx for production
+- Error handling and fallback responses
 
 ## Getting Started
 
-### Prerequisites
-- Node.js (v14+)
-- Python 3.8+ 
-- Docker and Docker Compose (optional)
+For detailed setup instructions, see the README.md files in the respective branches:
+- Backend setup: See the `backend` branch
+- Frontend setup: See the `frontend` branch
 
 ### Setting up the Backend
 
