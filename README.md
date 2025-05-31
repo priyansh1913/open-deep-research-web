@@ -1,67 +1,70 @@
-# Open Deep Research Web
+# Open Deep Research Web - Backend
 
-A web application that leverages Together AI API to provide comprehensive research reports on any topic. It uses React for the frontend and FastAPI for the backend.
+This is the backend component of the Open Deep Research web application. It provides a FastAPI server that connects to the Together AI API to generate comprehensive research reports on any topic.
 
 ## Features
 
-- Generate in-depth research reports on any topic
-- Automatic summary generation
-- Beautiful UI with pop-up modal for summaries
-- Detailed full reports with expandable sections
-- Responsive design
+- FastAPI server with CORS support
+- Integration with Together AI API
+- Comprehensive research report generation
+- Summarization capabilities
+- Error handling and fallback responses
 
 ## Technology Stack
 
-### Backend
 - FastAPI
 - Together AI API
 - Python 3.12
 - Pydantic for data validation
 - Docker for containerization
 
-### Frontend
-- React
-- Tailwind CSS with Typography plugin
-- React Modal
-- Heroicons
-- Docker with Nginx for production
-
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v14+)
 - Python 3.8+ 
-- Docker and Docker Compose (optional)
+- Docker (optional)
 
 ### Setting up the Backend
 
-1. Navigate to the backend directory:
-   ```
-   cd backend
-   ```
-
-2. Create a virtual environment:
+1. Create a virtual environment:
    ```
    python -m venv venv
    ```
 
-3. Activate the virtual environment:
+2. Activate the virtual environment:
    - Windows: `venv\Scripts\activate`
    - Linux/Mac: `source venv/bin/activate`
 
-4. Install dependencies:
+3. Install dependencies:
    ```
    pip install fastapi uvicorn pydantic PyYAML requests
    ```
 
-5. Set up your configuration:
+4. Set up your configuration:
    - Copy `configs/open_deep_researcher_config.yaml.example` to `configs/open_deep_researcher_config.yaml`
    - Add your Together AI API key to the configuration file
 
-6. Start the server:
+5. Start the server:
    ```
    uvicorn main:app --host 0.0.0.0 --port 8000 --reload
    ```
+
+## API Endpoints
+
+- `POST /api/research`: Accepts a topic and returns a comprehensive research report and summary
+
+## Docker
+
+The project includes a Dockerfile for containerization:
+
+```bash
+docker build -t open-deep-research-backend .
+docker run -p 8000:8000 -e TOGETHER_API_KEY=your_api_key open-deep-research-backend
+```
+
+## Environment Variables
+
+- `TOGETHER_API_KEY`: Your Together AI API key
 
 ### Setting up the Frontend
 
