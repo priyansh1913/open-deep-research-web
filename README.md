@@ -29,66 +29,109 @@ A web application that leverages Together AI API to provide comprehensive resear
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v14+)
-- Python 3.8+ 
-- Docker and Docker Compose (optional)
 
-### Setting up the Backend
+1. **Install Git** (if not already installed)
+   - Download from [git-scm.com](https://git-scm.com/downloads)
 
-1. Navigate to the backend directory:
-   ```
+2. **Install Node.js and npm** (for frontend)
+   - Download from [nodejs.org](https://nodejs.org/)
+
+3. **Install Python** (version 3.8 or higher)
+   - Download from [python.org](https://python.org/)
+
+### Step 1: Clone the Repository
+
+```powershell
+git clone https://github.com/priyansh1913/open-deep-research-web.git
+cd open-deep-research-web
+```
+
+### Step 2: Set Up the Backend
+
+1. **Navigate to the backend directory**:
+   ```powershell
    cd backend
    ```
 
-2. Create a virtual environment:
-   ```
+2. **Create a virtual environment**:
+   ```powershell
    python -m venv venv
    ```
 
-3. Activate the virtual environment:
-   - Windows: `venv\Scripts\activate`
-   - Linux/Mac: `source venv/bin/activate`
-
-4. Install dependencies:
+3. **Activate the virtual environment**:
+   ```powershell
+   .\venv\Scripts\activate
    ```
+
+4. **Install dependencies**:
+   ```powershell
    pip install fastapi uvicorn pydantic PyYAML requests
    ```
 
-5. Set up your configuration:
-   - Copy `configs/open_deep_researcher_config.yaml.example` to `configs/open_deep_researcher_config.yaml`
-   - Add your Together AI API key to the configuration file
+5. **Set up your API key**:
+   - Copy the example config file:
+     ```powershell
+     copy configs\open_deep_researcher_config.yaml.example configs\open_deep_researcher_config.yaml
+     ```
+   - Edit the file and replace `your_together_ai_api_key_here` with your actual Together AI API key
+     (You can get an API key from [Together AI](https://together.ai/))
 
-6. Start the server:
-   ```
+6. **Start the backend server**:
+   ```powershell
    uvicorn main:app --host 0.0.0.0 --port 8000 --reload
    ```
 
-### Setting up the Frontend
+7. **Keep the terminal window open** and open a new terminal for the frontend setup
 
-1. Navigate to the frontend directory:
-   ```
+### Step 3: Set Up the Frontend
+
+1. **Navigate to the frontend directory** (from the project root):
+   ```powershell
    cd frontend
    ```
 
-2. Install dependencies:
-   ```
+2. **Install dependencies**:
+   ```powershell
    npm install
    ```
 
-3. Start the development server:
-   ```
+3. **Start the development server**:
+   ```powershell
    npm start
    ```
 
-### Using Docker
+4. **Your browser should automatically open** to http://localhost:3000
 
-If you prefer to use Docker:
+### Step 4: Use the Application
 
-```
-docker-compose up --build
-```
+1. Enter a research topic in the text area
+2. Click "Start Deep Research" 
+3. Wait for the response
+4. View the summary in the pop-up modal
+5. Explore the detailed report below the input form
 
-This will build and start both the frontend and backend services.
+### Alternative: Using Docker
+
+If you prefer to use Docker, you can run the entire application with just a few commands:
+
+1. **Make sure you've set up your API key** in `backend/configs/open_deep_researcher_config.yaml`
+
+2. **From the project root directory**, run:
+   ```powershell
+   docker-compose up --build
+   ```
+
+3. **Access the application** at http://localhost:3000
+
+### Troubleshooting
+
+1. **CORS issues**: If you encounter CORS errors, make sure both servers are running and check the backend console for errors.
+
+2. **API key errors**: Verify your Together AI API key is correctly entered in the config file.
+
+3. **Port conflicts**: If ports 3000 or 8000 are already in use, you can modify the port numbers in the respective configuration files.
+
+4. **Missing dependencies**: If you encounter errors about missing packages, run the installation commands again.
 
 ## Usage
 
