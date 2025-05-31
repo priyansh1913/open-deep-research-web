@@ -69,12 +69,9 @@ cd open-deep-research-web
    ```
 
 5. **Set up your API key**:
-   - Copy the example config file:
-     ```powershell
-     copy configs\open_deep_researcher_config.yaml.example configs\open_deep_researcher_config.yaml
-     ```
-   - Edit the file and replace `your_together_ai_api_key_here` with your actual Together AI API key
-     (You can get an API key from [Together AI](https://together.ai/))
+  
+   - Edit the file  configs\open_deep_researcher_config.yaml and replace `your_together_ai_api_key_here` with your actual Together AI API key
+   
 
 6. **Start the backend server**:
    ```powershell
