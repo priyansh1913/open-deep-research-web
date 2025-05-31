@@ -141,6 +141,15 @@ If you prefer to use Docker, you can run the entire application with just a few 
 4. View the summary in the pop-up modal
 5. Explore the detailed report below
 
+## Branch Information
+
+This repository contains several branches:
+
+- `main`: The complete project with both frontend and backend
+- `backend`: Contains only the backend FastAPI implementation
+- `frontend`: Contains only the frontend React implementation
+- `src`: Contains just the source code files for both components
+
 ## License
 
 MIT
