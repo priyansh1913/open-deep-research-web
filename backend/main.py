@@ -12,6 +12,11 @@ logger = logging.getLogger(__name__)
 class ResearchRequest(BaseModel):
     topic: str
 
+class FollowUpRequest(BaseModel):
+    question: str
+    originalTopic: str = None
+    originalReport: str = None
+
 with open("configs/open_deep_researcher_config.yaml") as f:
     config = yaml.safe_load(f)
 
@@ -39,6 +44,40 @@ async def research(req: ResearchRequest):
         return {"report": report}
     except Exception as e:
         logger.error(f"Error processing research request: {str(e)}")
+        raise HTTPException(500, detail=str(e))
+
+@app.post("/api/follow-up")
+async def follow_up(req: FollowUpRequest):
+    try:
+        logger.info(f"Received follow-up request: {req.question}")
+        
+        if not req.originalReport:
+            logger.warning("No original report provided for context")
+            raise HTTPException(400, detail="No original report provided for context")
+        
+        # Create a prompt for the follow-up question
+        prompt = f"""You are an AI research assistant. You previously conducted research on the topic: "{req.originalTopic}".
+Based on the research report below, answer the follow-up question as thoroughly as possible.
+
+ORIGINAL RESEARCH REPORT:
+{req.originalReport}
+
+FOLLOW-UP QUESTION:
+{req.question}
+
+Please provide a detailed answer to the follow-up question based ONLY on the information in the original research report.
+"""
+        
+        # Use the same model as the research to answer the follow-up
+        rdr = OpenDeepResearch(config=config, serverless_only=True)
+        
+        # Get answer to follow-up question
+        answer = rdr.get_follow_up_answer(prompt)
+        
+        logger.info("Follow-up question answered successfully")
+        return {"answer": answer}
+    except Exception as e:
+        logger.error(f"Error processing follow-up request: {str(e)}")
         raise HTTPException(500, detail=str(e))
 
 if __name__ == "__main__":
