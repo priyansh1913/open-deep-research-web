@@ -27,44 +27,90 @@ A comprehensive AI-powered research assistant web application that leverages Tog
 
 ## 🚀 Quick Start (Easy Setup)
 
-### Option 1: One-Click Start (Recommended)
+### Prerequisites (Install These First)
+Before starting, make sure you have these installed:
+- **Python 3.8+** - [Download from python.org](https://python.org/) (⚠️ Check "Add to PATH" during installation)
+- **Node.js v14+** - [Download from nodejs.org](https://nodejs.org/) 
+- **Git** - [Download from git-scm.com](https://git-scm.com/downloads)
+- **At least 5GB free space** on your D drive (for AI models and cache)
+- **Internet connection** (first run downloads ~2-4GB of AI models)
+
+### Option 1: One-Click Start (Recommended) 
+
 1. **Clone the repository**:
    ```powershell
    git clone https://github.com/priyansh1913/open-deep-research-web.git
    cd open-deep-research-web
    ```
 
-2. **Set up your API key**:
-   - Edit `backend/configs/open_deep_researcher_config.yaml`
-   - Replace `your_together_ai_api_key_here` with your actual Together AI API key
-   - Get your free API key from [Together AI](https://together.ai/)
+2. **Get your FREE API key** (Required):
+   - Go to [Together AI](https://together.ai/) and sign up for a free account
+   - Copy your API key from the dashboard
+   - Navigate to `backend/configs/` folder
+   - Copy `open_deep_researcher_config.yaml.example` to `open_deep_researcher_config.yaml`
+   - Open the new file and replace `your_together_ai_api_key_here` with your actual API key
 
 3. **Run the application**:
-   - **Windows**: Double-click `start_app.bat` or run `.\start_complete.ps1` in PowerShell
-   - **Manual**: Run `.\start_servers.ps1` in PowerShell
+   ```powershell
+   # Option A: Double-click this file in Windows Explorer
+   start_app.bat
+   
+   # Option B: Run in PowerShell
+   .\start_complete.ps1
+   ```
 
-4. **Access the application** at `http://localhost:3000`
+4. **Wait and access** (be patient on first run):
+   - First run takes 3-5 minutes to download AI models
+   - Backend starts on `http://localhost:8000`
+   - Frontend starts on `http://localhost:3000` 
+   - Your browser should open automatically to `http://localhost:3000`
 
-### Option 2: Docker (Simplest)
-1. Make sure Docker is installed on your system
-2. Clone the repository and set up your API key (steps 1-2 above)
-3. Run: `docker-compose up --build`
-4. Access at `http://localhost:3000`
+**That's it!**  The script automatically:
+-  Installs all Python and Node.js dependencies
+-  Sets up D-drive cache locations (saves C drive space)
+-  Downloads required AI models (~2-4GB first time only)
+-  Starts both backend and frontend servers
+-  Opens the application in your browser
 
-That's it! The application will automatically install dependencies and start both frontend and backend servers.
+### Option 2: Docker (Alternative)
+```powershell
+# 1. Install Docker Desktop first
+# 2. Clone the repo and set up API key (steps 1-2 above)
+# 3. Run:
+docker-compose up --build
 
-## D Drive Installation
+# 4. Access at http://localhost:3000
+```
 
-All models, caches, and temporary files are now configured to use the D drive instead of C drive. The following locations are used:
+### ⚠️ Common Issues & Solutions
 
-- `D:\ai website\open-deep-research-web\huggingface_cache` - HuggingFace model cache
-- `D:\ai website\open-deep-research-web\torch_cache` - PyTorch cache
-- `D:\ai website\open-deep-research-web\transformers_cache` - Transformers models
-- `D:\ai website\open-deep-research-web\xdg_cache` - General Python cache
-- `D:\ai website\open-deep-research-web\pip_cache` - PIP package cache
-- `D:\ai website\open-deep-research-web\npm_cache` - NPM package cache
+**"Python not found" or "Node not found":**
+- Reinstall Python/Node.js and make sure to check "Add to PATH"
+- Restart your terminal/PowerShell after installation
 
-To clean up your C drive, use the provided `clean_c_drive.bat` script.
+**"Port already in use" errors:**
+- Close any existing servers on ports 3000 or 8000
+- Or modify ports in the configuration files
+
+**"API key errors":**
+- Double-check your Together AI API key is correctly copied
+- Make sure you saved the config file after editing
+
+**First image generation is slow:**
+- Normal behavior - first image takes 2-5 minutes to load the model
+- Subsequent images are much faster
+- CPU users: expect slower performance than GPU users
+
+
+
+
+###  What to Expect on First Run
+- **Initial Setup**: 3-5 minutes to install dependencies and download AI models
+- **Model Download**: ~2-4GB of AI models will be downloaded to D drive
+- **First Image**: Takes 2-5 minutes to generate (subsequent images are much faster)
+- **Stable Diffusion**: Automatic CPU/GPU detection with fallback support
+
+
 
 ## Documentation
 
@@ -89,12 +135,20 @@ To clean up your C drive, use the provided `clean_c_drive.bat` script.
 - Chart.js and Mermaid.js for visualizations
 - Docker with Nginx for production
 
-## Requirements
+## System Requirements
 
-- Python 3.8+
-- Node.js (v14+)
-- PyTorch
-- CUDA-compatible GPU (recommended for faster image generation)
+### Minimum Requirements
+- **OS**: Windows 10/11, macOS 10.15+, or Linux
+- **Python**: 3.8 or higher
+- **Node.js**: v14 or higher
+- **RAM**: 8GB minimum (16GB recommended for image generation)
+- **Storage**: 5GB free space on D drive for models and cache
+- **Internet**: Broadband connection (for downloading models first time)
+
+### Recommended for Best Performance
+- **GPU**: NVIDIA GPU with CUDA support (for faster image generation)
+- **RAM**: 16GB+ for smooth Stable Diffusion image generation
+- **Storage**: SSD for faster model loading
 
 ## Manual Setup (Advanced Users)
 
@@ -174,21 +228,88 @@ cd open-deep-research-web
 
 </details>
 
-## Usage
+##  How to Use
 
-1. Open your browser and navigate to http://localhost:3000
-2. Enter a research topic in the input field
-3. Click "Start Deep Research"
-4. View the summary in the pop-up modal
-5. Explore the detailed report below with visualizations
+### Basic Research
+1. **Open your browser** and navigate to `http://localhost:3000`
+2. **Enter a research topic** in the input field (e.g., "artificial intelligence trends 2025")
+3. **Click "Start Deep Research"** and wait for the analysis
+4. **View the summary** in the pop-up modal that appears
+5. **Explore the detailed report** below with interactive visualizations
 
-## Troubleshooting
+### Advanced Features
+- **Image Generation**: Research reports automatically include relevant AI-generated images
+- **Interactive Charts**: Click and explore data visualizations created with Chart.js
+- **Mermaid Diagrams**: View complex relationships and flowcharts
+- **Export Options**: Copy text or save reports for later use
 
-1. **CORS issues**: Make sure both servers are running and check the backend console for errors
-2. **API key errors**: Verify your Together AI API key is correctly entered in the config file
-3. **Port conflicts**: If ports 3000 or 8000 are in use, modify the port numbers in configuration files
-4. **Missing dependencies**: Run the installation commands again
-5. **Stable Diffusion issues**: Check the [Stable Diffusion Quickstart Guide](./STABLE_DIFFUSION_QUICKSTART.md)
+### Tips for Better Results
+- **Be Specific**: "Machine learning in healthcare 2025" works better than just "AI"
+- **Use Current Topics**: The AI has knowledge up to its training cutoff
+- **Wait Patiently**: Complex research takes 30-60 seconds to complete
+- **First Image**: The first AI image generation takes longer due to model loading
+
+## 🔧 Troubleshooting
+
+### Installation Issues
+
+**" Python is not recognized as an internal or external command"**
+- **Solution**: Reinstall Python from [python.org](https://python.org/) and check "Add Python to PATH"
+- **Test**: Open new PowerShell and run `python --version`
+
+** "Node is not recognized as an internal or external command"**
+- **Solution**: Install Node.js from [nodejs.org](https://nodejs.org/) and restart your terminal
+- **Test**: Run `node --version` and `npm --version`
+
+** "Port 3000/8000 already in use"**
+- **Solution**: Close other applications using these ports or restart your computer
+- **Check**: Run `netstat -ano | findstr :3000` to see what's using the port
+
+### API & Configuration Issues
+
+** "API key errors" or "Unauthorized"**
+- **Check**: Verify your Together AI API key is correctly copied in `backend/configs/open_deep_researcher_config.yaml`
+- **Format**: Make sure there are no extra spaces or quotes around the API key
+- **File**: Ensure you copied the `.example` file to create the config file
+
+** "Configuration file not found"**
+- **Solution**: Copy `backend/configs/open_deep_researcher_config.yaml.example` to `open_deep_researcher_config.yaml`
+- **Location**: Must be in `backend/configs/` folder
+
+### Performance Issues
+
+** "First image generation takes forever"**
+- **Normal**: First image takes 2-5 minutes to download and load the model (~2-4GB)
+- **CPU Users**: Expect 5-10 minutes for first generation, 2-3 minutes for subsequent images
+- **GPU Users**: Much faster after initial model download
+
+** "Out of memory errors during image generation"**
+- **Solution**: Close other applications to free up RAM
+- **GPU**: Reduce image size or use CPU mode if GPU memory is insufficient
+- **System**: Minimum 8GB RAM recommended, 16GB for smooth operation
+
+### Network & Download Issues
+
+** "Failed to download models" or "Connection timeout"**
+- **Solution**: Check your internet connection and try again
+- **Firewall**: Ensure Python and Node.js can access the internet
+- **Size**: Models are 2-4GB total, so download may take time on slower connections
+
+** "CORS errors" in browser**
+- **Solution**: Make sure both backend (port 8000) and frontend (port 3000) are running
+- **Check**: Backend should show "Server started" and frontend should open browser automatically
+
+### Advanced Troubleshooting
+
+** "D drive not accessible" or permission errors**
+- **Solution**: Run PowerShell as Administrator or change cache location in startup script
+- **Alternative**: Edit `start_complete.ps1` to use C drive (not recommended for space reasons)
+
+** Still having issues?**
+- **Check Logs**: Look at the console output from backend and frontend servers
+- **Restart**: Try closing all windows and running `start_app.bat` again
+- **Clean Start**: Delete `node_modules` folder in frontend and cache folders, then restart
+- **Documentation**: Check [Stable Diffusion Quickstart Guide](./STABLE_DIFFUSION_QUICKSTART.md) for advanced setup
 
 ## Branch Information
 
@@ -203,14 +324,11 @@ This repository contains several branches:
 
 MIT
 
-## Acknowledgements
+##  Acknowledgements
 
 - [Together AI](https://together.ai/) for providing the AI API
 - [FastAPI](https://fastapi.tiangolo.com/) for the backend framework
 - [React](https://reactjs.org/) for the frontend framework
 - [Tailwind CSS](https://tailwindcss.com/) for styling
-
-- [Together AI](https://together.ai/) for providing the AI API
-- [FastAPI](https://fastapi.tiangolo.com/) for the backend framework
-- [React](https://reactjs.org/) for the frontend framework
-- [Tailwind CSS](https://tailwindcss.com/) for styling
+- [Stable Diffusion](https://stability.ai/) for AI image generation
+- [Hugging Face](https://huggingface.co/) for model hosting and tools
