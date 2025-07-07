@@ -1,4 +1,4 @@
-# Open Deep Research Web
+
 
 A comprehensive AI-powered research assistant web application that leverages Together AI API to provide in-depth research reports on any topic. Features local Stable Diffusion image generation capabilities with intelligent caching on the D drive to save C drive space.
 
@@ -292,3 +292,4 @@ MIT
 - [Tailwind CSS](https://tailwindcss.com/) for styling
 - [Stable Diffusion](https://stability.ai/) for AI image generation
 - [Hugging Face](https://huggingface.co/) for model hosting and tools
+
