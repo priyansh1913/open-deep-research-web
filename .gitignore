@@ -35,3 +35,47 @@ Thumbs.db
 # API Keys and Secrets
 configs/*config*.yaml
 !configs/open_deep_researcher_config.yaml.example
+
+# Cache directories
+huggingface_cache/
+transformers_cache/
+npm_cache/
+pip_cache/
+
+# Backup and temporary files
+*.bak
+*.old
+*.backup
+*.tmp
+*.temp
+*~
+
+# Test output
+backend/test_output/
+
+# Local setup scripts
+*.bat
+*.ps1
+start_*.py
+fix_*.py
+test_*.py
+diagnose_*.py
+cleanup.*
+install_*.py
+setup_*.py
+repair_*.py
+launch_*.py
+
+# Streamlit (removed feature)
+.streamlit/
+streamlit_*.py
+streamlit_requirements.txt
+STREAMLIT_README.md
+
+# Local documentation
+*TROUBLESHOOTING.md
+*_INSTALL.md
+
+# Additional generated files
+START_COMMAND.txt
+example.py

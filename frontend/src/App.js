@@ -2,24 +2,30 @@ import { useState, useEffect, useRef } from "react";
 import Modal from "react-modal";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { XMarkIcon, LightBulbIcon, DocumentTextIcon, ChevronDownIcon, ChevronUpIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
-
+import { XMarkIcon, LightBulbIcon, DocumentTextIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
+import DynamicResearchResults from "./components/DynamicResearchResults";
 // Set the app element for accessibility
 Modal.setAppElement("#root");
 
-function App() {  const [topic, setTopic] = useState("");
+function App() {  
+  const [topic, setTopic] = useState("");
   const [currentResearchTopic, setCurrentResearchTopic] = useState("");
   const [messages, setMessages] = useState([]);
   const [report, setReport] = useState(null);
   const [summary, setSummary] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [modalIsOpen, setModalIsOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState({});
   const [researchDate, setResearchDate] = useState("");
   const [keyTopics, setKeyTopics] = useState([]);
   const [challenges, setChallenges] = useState("");
   const [futureDirections, setFutureDirections] = useState("");
+  const [generatedImage, setGeneratedImage] = useState(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  
+  // Dynamic research states
+  const [currentResults, setCurrentResults] = useState(null);
+
   const messagesEndRef = useRef(null);
 
   // Scroll to bottom of messages with a small delay to allow content to render
@@ -34,22 +40,21 @@ function App() {  const [topic, setTopic] = useState("");
   }, [messages]);
 
   // Close modal when escape key is pressed
-  useEffect(() => {
-    const handleEscapeKey = (e) => {
+  useEffect(() => {    const handleEscapeKey = (e) => {
       if (e.key === "Escape") {
-        setModalIsOpen(false);
+        setReportModalOpen(false);
       }
     };
     window.addEventListener("keydown", handleEscapeKey);
     return () => window.removeEventListener("keydown", handleEscapeKey);
   }, []);
-
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
   };
+
   const handleSubmit = async () => {
     if (!topic.trim()) return;
     
@@ -64,17 +69,79 @@ function App() {  const [topic, setTopic] = useState("");
       timestamp: new Date().toLocaleTimeString()
     };
     setMessages(prev => [...prev, userMessage]);
-    
-    // Clear input
+      // Clear input
     setTopic("");
     
-    // Show loading message
+    // Check if this is a prompt refinement request
+    const promptRefinementKeywords = [
+      'refine prompt', 'improve prompt', 'enhance prompt', 'better prompt',
+      'optimize prompt', 'refine my prompt', 'improve my prompt', 'enhance my prompt',
+      'make prompt better', 'help with prompt', 'prompt help'
+    ];
+    
+    const isPromptRefinementRequest = promptRefinementKeywords.some(keyword => 
+      topic.toLowerCase().includes(keyword)
+    );
+    
+    if (isPromptRefinementRequest) {
+      // Extract the prompt to refine (usually after keywords like "refine prompt:")
+      let promptToRefine = topic;
+      // Try to extract prompt after common patterns
+      const patterns = [
+        /refine prompt:?\s*(.*)/i,
+        /improve prompt:?\s*(.*)/i,
+        /enhance prompt:?\s*(.*)/i,
+        /better prompt for:?\s*(.*)/i,
+        /optimize prompt:?\s*(.*)/i
+      ];
+      
+      for (const pattern of patterns) {
+        const match = topic.match(pattern);
+        if (match && match[1].trim()) {
+          promptToRefine = match[1].trim();
+          break;
+        }
+      }
+      
+      await handlePromptRefinement(promptToRefine);
+      return;
+    }
+    
+    // Check if this is an image generation request
+    const imageKeywords = [
+      'generate image', 'create image', 'make image', 'draw', 'picture of', 
+      'image of', 'show me', 'visualize', 'illustrate', 'create a picture',
+      'generate a picture', 'make a picture', 'draw me', 'sketch', 'artwork',
+      'create art', 'design', 'render', 'paint', 'create visual', 'generate a visual'
+    ];
+    
+    // Also check if the prompt starts with image-related phrases
+    const imageStartPhrases = [
+      'draw', 'create', 'generate', 'make', 'show', 'visualize', 'illustrate',
+      'paint', 'sketch', 'design', 'render'
+    ];
+    
+    const isImageRequest = imageKeywords.some(keyword => 
+      topic.toLowerCase().includes(keyword)
+    ) || imageStartPhrases.some(phrase => 
+      topic.toLowerCase().startsWith(phrase + ' ') || 
+      topic.toLowerCase().startsWith(phrase + ' a ') ||
+      topic.toLowerCase().startsWith(phrase + ' an ')
+    );
+    
+    if (isImageRequest) {
+      // Handle image generation
+      await handleImageGeneration(topic);
+      return;
+    }
+    
+    // Show loading message for research
     setLoading(true);
     setError("");
     
     // Create an AbortController to handle timeouts
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 240000); // 4 minute timeout for comprehensive research
     
     try {
       console.log("Sending request to backend...");
@@ -114,18 +181,29 @@ function App() {  const [topic, setTopic] = useState("");
       const reportData = typeof data.report === "string" 
         ? { full_report: data.report, summary: "" } 
         : data.report;
-        // Remove typing indicator
+      
+      // Remove typing indicator
       setMessages(prev => prev.filter(msg => msg.id !== typingId));
-          // Generate a summary if one wasn't provided
-      let summaryText = reportData.summary;
+      
+      // Process results with dynamic analysis
+      const results = {
+        report: reportData.full_report || data.report,
+        summary: data.summary || reportData.summary,
+        suggested_questions: data.suggested_questions || []
+      };
+      
+      setCurrentResults(results);
+      
+      // Generate a summary if one wasn't provided
+      let summaryText = results.summary;
       if (!summaryText || summaryText.trim() === "") {
         // Use the first few sentences of the full report as a summary
-        const sentences = reportData.full_report.match(/[^.!?]+[.!?]+/g) || [];
+        const sentences = results.report.match(/[^.!?]+[.!?]+/g) || [];
         summaryText = sentences.slice(0, 3).join(' ');
       }
       
       // Generate context-aware follow-up questions based on the report content
-      const contextAwareFollowUps = generateContextAwareFollowUps(reportData.full_report, currentResearchTopic);
+      const contextAwareFollowUps = generateContextAwareFollowUps(results.report, currentResearchTopic);
       
       // Add assistant message with summary instead of full report
       const assistantMessage = {
@@ -134,20 +212,21 @@ function App() {  const [topic, setTopic] = useState("");
         sender: 'assistant',
         timestamp: new Date().toLocaleTimeString(),
         hasDetails: true,
-        suggestedFollowUps: contextAwareFollowUps
+        suggestedFollowUps: contextAwareFollowUps,
+        results: results
       };
       setMessages(prev => [...prev, assistantMessage]);
-      
-      // Store the full report for viewing in modal
-      setReport(reportData.full_report);
+      // Store the full report for viewing in modal and parse the data
+      setReport(results.report);
       setSummary(summaryText);
+      // Legacy parsing replaced by dynamic components
+      extractAdditionalInfo(reportData.full_report);
       
       // Set the research date
       setResearchDate(new Date().toLocaleString());
       
       // Extract additional information from the report
-      extractAdditionalInfo(reportData.full_report);
-      
+      extractAdditionalInfo(results.report);
     } catch (e) {
       console.error("Error in handleSubmit:", e);
       
@@ -158,7 +237,7 @@ function App() {  const [topic, setTopic] = useState("");
       setMessages(prev => [...prev, {
         id: Date.now() + 3,
         text: e.name === 'AbortError' 
-          ? "The research is taking longer than expected. Please try again." 
+          ? "The research took longer than 4 minutes to complete. Please try a more specific query or try again." 
           : `Error: ${e.message || "An unknown error occurred"}`,
         sender: 'assistant',
         isError: true,
@@ -166,7 +245,7 @@ function App() {  const [topic, setTopic] = useState("");
       }]);
       
       if (e.name === 'AbortError') {
-        setError("Request timed out. Please try again later.");
+        setError("Research request timed out after 4 minutes. Please try a more specific query or try again later.");
       } else {
         setError(e.message || "An unknown error occurred");
       }
@@ -176,14 +255,61 @@ function App() {  const [topic, setTopic] = useState("");
     }
   };
 
+  // Handle follow-up questions with dynamic analysis
+  const handleFollowUpQuestion = async (question) => {
+    setTopic(question);
+    await handleSubmit();
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
+  };  const MessageContent = ({ message, onViewReport }) => {
+    const textColorClass = message.sender === 'user' ? 'text-white' : 'text-gray-900';
+    
+    if (message.image || message.imageUrl) {
+      return (
+        <div className="flex flex-col gap-3">
+          <p className={textColorClass}>{message.text}</p>
+          <img 
+            src={message.image || message.imageUrl} 
+            alt="Generated image"
+            className="rounded-lg max-w-md w-full object-contain shadow-lg"
+            loading="lazy"
+            style={{ maxHeight: "80vh" }}
+          />
+        </div>
+      );
+    }
+
+    if (message.text) {
+      return (
+        <div className={textColorClass}>
+          {message.text}
+          
+          {message.hasDetails && (
+            <button
+              onClick={() => onViewReport()}
+              className="mt-3 inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            >
+              <DocumentTextIcon className="h-5 w-5 mr-2" />
+              View Dynamic Report
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className={textColorClass}>
+        {message.text}
+      </div>
+    );
   };
 
-  // Parse the markdown content into sections
+  // Format the report content into sections
   const formatReport = (content) => {
     if (!content) return [];
     
@@ -444,7 +570,10 @@ function App() {  const [topic, setTopic] = useState("");
         }
       }
     }
-  };// Handle follow-up questions
+  };
+
+
+  // Handle follow-up questions
   const handleFollowUp = async (question) => {
     // Add user message to chat
     const userMessage = {
@@ -469,7 +598,7 @@ function App() {  const [topic, setTopic] = useState("");
     
     // Create an AbortController to handle timeouts
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 240000); // 4 minute timeout for follow-up research
     
     try {
       console.log("Sending follow-up request to backend...");
@@ -535,8 +664,142 @@ function App() {  const [topic, setTopic] = useState("");
       clearTimeout(timeoutId);
       setLoading(false);
     }
+  };  // Function to refine prompts without generating images
+  const handlePromptRefinement = async (prompt) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    
+    const typingId = Date.now() + 1;
+    setMessages(prev => [...prev, {
+      id: typingId,
+      text: "Refining your prompt...",
+      sender: 'assistant',
+      isTyping: true
+    }]);
+    
+    try {
+      const res = await fetch("http://localhost:8000/api/refine-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: prompt }),
+        signal: controller.signal
+      });
+      
+      setMessages(prev => prev.filter(msg => msg.id !== typingId));
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || `Server returned ${res.status}`);
+      }
+      
+      const data = await res.json();
+      
+      const assistantMessage = {
+        id: Date.now(),
+        text: `Here's your refined prompt:\n\n**Original:** "${data.original_prompt}"\n\n**Enhanced:** "${data.refined_prompt}"\n\nYou can now use this enhanced prompt for better image generation!`,
+        sender: 'assistant',
+        timestamp: new Date().toLocaleTimeString()
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+      
+    } catch (e) {
+      setMessages(prev => prev.filter(msg => msg.id !== typingId));
+      
+      const errorMessage = {
+        id: Date.now(),
+        text: `Sorry, I couldn't refine your prompt: ${e.message || "An unknown error occurred"}`,
+        sender: 'assistant',
+        timestamp: new Date().toLocaleTimeString(),
+        isError: true
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);    } finally {
+      clearTimeout(timeoutId);
+    }
   };
-
+  
+  // Function to handle image generation
+  const handleImageGeneration = async (prompt) => {
+    // Create an AbortController to handle timeouts
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout for image generation (first run may download models)
+    
+    // Add typing indicator for image generation
+    const typingId = Date.now() + 1;
+    setMessages(prev => [...prev, {
+      id: typingId,
+      text: "Refining your prompt and generating image...\nThis may take a few minutes if using the CPU or loading models for the first time.",
+      sender: 'assistant',
+      isTyping: true
+    }]);
+    
+    try {
+      const res = await fetch("http://localhost:8000/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: prompt }),
+        signal: controller.signal
+      });
+      
+      // Remove typing indicator
+      setMessages(prev => prev.filter(msg => msg.id !== typingId));
+        if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || `Server returned ${res.status}`);
+      }
+      
+      const data = await res.json();
+      
+      if (!data || (!data.image_url && !data.image_base64)) {
+        throw new Error("Invalid response format from server");
+      }
+      
+      // Create an image URL from base64 if that's what we got
+      const imageUrl = data.image_url || `data:image/png;base64,${data.image_base64}`;
+        // Add just a simple message with the image, removing the enhanced prompt display
+      const assistantMessage = {
+        id: Date.now(),
+        text: `Here's your generated image:`,
+        sender: 'assistant',
+        timestamp: new Date().toLocaleTimeString(),
+        imageUrl: imageUrl,
+        originalPrompt: data.original_prompt || prompt,
+        refinedPrompt: data.refined_prompt || prompt
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+      
+    } catch (e) {
+      // Remove typing indicator on error
+      setMessages(prev => prev.filter(msg => msg.id !== typingId));
+        console.error("Error in image generation:", e);
+      
+      // Add error message to chat
+      let errorMsg = "An unknown error occurred";
+      
+      if (e.name === 'AbortError') {
+        errorMsg = "Image generation took too long. The first run may take longer while downloading models. Please try again.";
+      } else if (e.message && e.message.includes("CUDA")) {
+        errorMsg = `${e.message}\n\nPlease see the CUDA_TROUBLESHOOTING.md file for instructions on fixing CUDA issues.`;
+      } else if (e.message) {
+        errorMsg = e.message;
+      }
+      
+      const errorMessage = {
+        id: Date.now(),
+        text: `Sorry, I couldn't generate the image: ${errorMsg}`,
+        sender: 'assistant',
+        timestamp: new Date().toLocaleTimeString(),
+        isError: true
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+  
   // Add welcome message when component mounts
   useEffect(() => {
     // Add a slight delay to make it seem like the assistant is typing
@@ -544,7 +807,7 @@ function App() {  const [topic, setTopic] = useState("");
       setMessages([
         {
           id: Date.now(),
-          text: "Hello! I'm your AI research assistant. What topic would you like me to research for you today?",
+          text: "Hello! I'm your AI research assistant. I can research topics for you or generate images. Try asking 'Research climate change' or 'Generate image of a futuristic city'. What would you like me to help you with today?",
           sender: 'assistant',
           timestamp: new Date().toLocaleTimeString()
         }
@@ -818,9 +1081,7 @@ function App() {  const [topic, setTopic] = useState("");
     const properNouns = [];
     
     for (let i = 0; i < words.length; i++) {
-      const word = words[i].trim();
-      
-      // Skip words at the beginning of sentences or empty words
+      const word = words[i].trim();      // Skip words at the beginning of sentences or empty words
       if (i === 0 || !word || word.length < 2) continue;
       
       // Check if previous word ends with sentence-ending punctuation
@@ -846,19 +1107,17 @@ function App() {  const [topic, setTopic] = useState("");
     // Sort by occurrence count (most frequent first)
     return Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
   };
-
+  
   return (
-    <div className="max-w-4xl mx-auto p-4 min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col">      <div className="bg-white shadow-lg rounded-lg overflow-hidden mb-4">
-        <div className="chat-header p-4">
-          <h1 className="text-2xl font-bold text-white flex items-center">
+    <div className="w-full mx-auto p-2 sm:p-4 min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col">      <div className="bg-white shadow-lg rounded-lg overflow-hidden mb-4">        <div className="chat-header p-4 bg-gradient-to-r from-indigo-600 to-purple-600">
+          <h1 className="text-2xl font-bold text-white flex items-center justify-center">
             <LightBulbIcon className="h-7 w-7 mr-2 text-yellow-300" />
             Open Deep Research Chat
           </h1>
         </div>
       </div>
-      
-      {/* Chat messages container */}
-      <div className="flex-grow bg-white shadow-lg rounded-lg p-4 mb-4 overflow-hidden flex flex-col">        <div className="flex-grow overflow-y-auto mb-4 px-2 message-container" style={{ maxHeight: 'calc(100vh - 250px)' }}>
+        {/* Chat messages container */}
+      <div className="flex-grow bg-white shadow-lg rounded-lg p-4 mb-4 overflow-hidden flex flex-col">        <div className="flex-grow overflow-y-auto mb-4 px-4 message-container" style={{ maxHeight: 'calc(100vh - 250px)' }}>
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-400">
               <LightBulbIcon className="h-16 w-16 mb-4 text-indigo-200" />
@@ -868,272 +1127,126 @@ function App() {  const [topic, setTopic] = useState("");
           ) : (
             <div className="space-y-4">
               {messages.map((message) => (
-                <div 
-                  key={message.id} 
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} message-enter`}
-                  style={{ animationDelay: `${Math.random() * 0.2}s` }}
-                >                  <div 
-                    className={`max-w-[90%] rounded-lg p-4 ${
-                      message.sender === 'user' 
-                        ? 'user-message text-white rounded-br-none' 
-                        : message.isError 
-                          ? 'bg-red-50 border border-red-200 text-red-700 rounded-bl-none'
-                          : message.isTyping
-                            ? 'bg-gray-100 text-gray-700 rounded-bl-none animate-pulse'
-                            : 'assistant-message text-gray-800 rounded-bl-none'
+                <div
+                  key={message.id}
+                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div                    className={`rounded-lg px-4 py-2 max-w-[80%] ${
+                      message.sender === 'user'
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 text-gray-900'
                     }`}
-                  >{message.isTyping ? (
-                      <div className="flex items-center">
-                        <span>{message.text}</span>
-                        <span className="ml-2 flex space-x-1">
-                          <span className="h-2 w-2 bg-gray-400 rounded-full typing-dot"></span>
-                          <span className="h-2 w-2 bg-gray-400 rounded-full typing-dot"></span>
-                          <span className="h-2 w-2 bg-gray-400 rounded-full typing-dot"></span>
-                        </span>
-                      </div>
-                    ) : (                      <div>                        <div className="whitespace-pre-wrap">
-                          {message.sender === 'assistant' && !message.isTyping && !message.isError ? (                            <div className="markdown-content prose prose-sm max-w-none">
-                              <div>
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                  {message.text}
-                                </ReactMarkdown>
-                              </div>
-                            </div>
-                          ) : (
-                            message.text
-                          )}
-                        </div>
-                        
-                        {message.suggestedFollowUps && (
-                          <div className="mt-3 space-y-2">
-                            <p className="text-xs font-medium text-gray-500">Suggested follow-up questions:</p>
-                            <div className="flex flex-wrap gap-2">                              {message.suggestedFollowUps.map((question, index) => (
-                                <button
-                                  key={index}
-                                  onClick={() => handleFollowUp(question)}
-                                  className="text-xs bg-white text-indigo-600 px-2 py-1 rounded-full follow-up-button"
-                                >
-                                  {question}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                          <div className="mt-1 text-xs opacity-70 flex justify-between items-center">
-                          <span>{message.timestamp}</span>
-                            {message.hasDetails && (
-                            <button 
-                              onClick={() => setModalIsOpen(true)}
-                              className="ml-2 text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center"
+                  >
+                    <div className="flex items-start gap-1">                      <MessageContent 
+                        message={message}
+                        onViewReport={() => setReportModalOpen(true)}
+                      />
+                    </div>
+                    <div className="text-xs mt-1 opacity-70">
+                      {message.timestamp}
+                    </div>
+                    {message.suggestedFollowUps && message.suggestedFollowUps.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-sm font-medium">Suggested follow-up questions:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {message.suggestedFollowUps.map((question, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setTopic(question)}
+                              className="text-sm px-3 py-1 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-colors"
                             >
-                              <DocumentTextIcon className="h-3 w-3 mr-1" />
-                              View Full Report
+                              {question}
                             </button>
-                          )}
+                          ))}
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
               ))}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 rounded-lg px-4 py-2 max-w-[80%]">
+                    <div className="flex space-x-2">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
           )}
         </div>
-        
-        {/* Chat input */}        <div className="border-t pt-4">
-          <div className="flex items-end">
-            <textarea
-              className="flex-grow border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none chat-input"
-              rows={1}
-              placeholder="Ask a research question..."
+
+        {/* Input area */}        <div className="space-y-4">
+          {/* Research question input */}          <div className="flex space-x-2">
+            <input
+              type="text"
               value={topic}
-              onChange={e => setTopic(e.target.value)}
+              onChange={(e) => setTopic(e.target.value)}
               onKeyDown={handleKeyDown}
-              style={{ minHeight: '44px', maxHeight: '120px' }}
+              placeholder="Ask a research question or request an image..."
+              className="flex-grow p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900 placeholder-gray-500"
             />
             <button
               onClick={handleSubmit}
               disabled={loading || !topic.trim()}
-              className="ml-2 p-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition-all duration-200 flex items-center justify-center h-[44px] w-[44px] shadow-md hover:shadow-lg"
+              className={`p-3 rounded-lg ${
+                loading || !topic.trim()
+                  ? 'bg-gray-300 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-700'
+              } text-white transition-colors`}
             >
-              {loading ? (
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : (
-                <PaperAirplaneIcon className="h-5 w-5 transform rotate-90" />
-              )}
+              <PaperAirplaneIcon className="h-5 w-5" />
             </button>
           </div>
-          {error && (
-            <div className="mt-2 text-sm text-red-600">
-              {error}
-            </div>
-          )}
         </div>
-      </div>      {/* Full Report Modal */}
+
+      </div>
+      {/* Dynamic Research Results Modal */}
       <Modal
-        isOpen={modalIsOpen}
-        onRequestClose={() => setModalIsOpen(false)}
-        contentLabel="Full Research Report"
+        isOpen={reportModalOpen}
+        onRequestClose={() => setReportModalOpen(false)}
         className="fixed inset-0 flex items-center justify-center p-4 z-50"
         overlayClassName="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm z-40"
         closeTimeoutMS={300}
       >
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-auto overflow-hidden transform transition-all animate-modalEntry">          <div className="bg-gradient-to-r from-indigo-700 via-purple-600 to-indigo-800 px-6 py-5 flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-white flex items-center">
-              <DocumentTextIcon className="h-7 w-7 mr-3 text-yellow-300" />
-              Full Research Report
-            </h2>
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl mx-auto overflow-hidden transform transition-all h-[90vh]">
+          {/* Header */}
+          <div className="px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold text-white">Research Results</h2>
+              <p className="text-sm text-indigo-100 mt-1">
+                {currentResearchTopic} • {researchDate}
+              </p>
+            </div>
             <button
-              onClick={() => setModalIsOpen(false)}
-              className="text-white hover:text-gray-200 focus:outline-none transition-transform hover:scale-110"
+              onClick={() => setReportModalOpen(false)}
+              className="text-white hover:text-indigo-100 focus:outline-none transition-transform hover:scale-110"
             >
-              <XMarkIcon className="h-7 w-7" />
+              <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
-          
-          <div className="px-6 py-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
-            <div className="prose max-w-none">
-              {/* Topic section */}
-              <div className="mb-5 animate-fadeIn" style={{ animationDelay: '0.1s' }}>
-                <h3 className="text-xl font-semibold text-indigo-800 flex items-center">
-                  <span className="inline-block w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600 mr-2 flex items-center justify-center shadow-sm">
-                    <span className="font-bold">Q</span>
-                  </span>
-                  Research Topic
-                </h3>                <div className="ml-10 mt-2">
-                  <div className="bg-gradient-to-r from-gray-50 to-indigo-50 p-4 rounded-lg border border-indigo-100 shadow-sm">
-                    <p className="text-gray-800 font-medium">{currentResearchTopic}</p>
-                  </div>
-                </div>
-              </div>                {/* Full Report section */}
-              <div className="mb-5 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-                <h3 className="text-xl font-semibold text-indigo-800 flex items-center">
-                  <span className="inline-block w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600 mr-2 flex items-center justify-center shadow-sm">
-                    <span className="font-bold">R</span>
-                  </span>
-                  Full Research Report
-                </h3>
-                <div className="ml-10 mt-2">
-                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-100 shadow-sm text-gray-800 max-h-96 overflow-y-auto">
-                    <div className="whitespace-pre-wrap markdown-content prose prose-sm max-w-none">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {report || "No report available for this research."}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
-                </div>
-              </div>{/* Key concepts section */}
-              {keyTopics.length > 0 && (
-                <div className="mb-5 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
-                  <h3 className="text-xl font-semibold text-indigo-800 flex items-center">
-                    <span className="inline-block w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600 mr-2 flex items-center justify-center shadow-sm">
-                      <span className="font-bold">K</span>
-                    </span>
-                    Key Concepts & Findings
-                  </h3>
-                  <div className="ml-10 mt-2">
-                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-100 shadow-sm max-h-80 overflow-y-auto">
-                      <p className="text-sm text-indigo-600 italic mb-3">Essential concepts and important findings in this research area:</p>
-                      <ul className="list-disc pl-5 space-y-3 text-gray-800">
-                        {keyTopics.map((topic, index) => (
-                          <li key={index} className="leading-relaxed animate-slideInRight" style={{ animationDelay: `${0.4 + index * 0.1}s` }}>
-                            <div className="font-medium">{topic}</div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              )}
 
-              {/* Challenges section */}
-              {challenges && (
-                <div className="mb-5 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
-                  <h3 className="text-xl font-semibold text-indigo-800 flex items-center">
-                    <span className="inline-block w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600 mr-2 flex items-center justify-center shadow-sm">
-                      <span className="font-bold">C</span>
-                    </span>
-                    Challenges & Limitations
-                  </h3>                  <div className="ml-10 mt-2">
-                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-100 shadow-sm text-gray-800 whitespace-pre-wrap max-h-80 overflow-y-auto">
-                      <p className="text-sm text-indigo-600 italic mb-3">Current obstacles and limitations in this field of research:</p>
-                      <div dangerouslySetInnerHTML={{ __html: challenges.replace(/•\s(.*?)(?=(\n\n•|$))/gs, '<div class="mb-3"><span class="inline-block w-4 h-4 rounded-full bg-indigo-100 text-indigo-600 mr-2 flex-shrink-0 text-center leading-4">•</span>$1</div>') }} />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Future directions section */}
-              {futureDirections && (
-                <div className="mb-5 animate-fadeIn" style={{ animationDelay: '0.5s' }}>
-                  <h3 className="text-xl font-semibold text-indigo-800 flex items-center">                    <span className="inline-block w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600 mr-2 flex items-center justify-center shadow-sm">
-                      <span className="font-bold">F</span>
-                    </span>
-                    Future Research Directions
-                  </h3>                  <div className="ml-10 mt-2">
-                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-100 shadow-sm text-gray-800 whitespace-pre-wrap max-h-80 overflow-y-auto">
-                      <p className="text-sm text-indigo-600 italic mb-3">Promising avenues for future research and potential developments:</p>
-                      <div dangerouslySetInnerHTML={{ __html: futureDirections.replace(/•\s(.*?)(?=(\n\n•|$))/gs, '<div class="mb-3"><span class="inline-block w-4 h-4 rounded-full bg-indigo-100 text-indigo-600 mr-2 flex-shrink-0 text-center leading-4">•</span>$1</div>') }} />
-                    </div>
-                  </div>
-                </div>
-              )}              {/* Metadata section */}
-              <div className="mt-6 ml-10 flex flex-col text-xs text-gray-500 border-t border-gray-200 pt-3 animate-fadeIn" style={{ animationDelay: '0.6s' }}>
-                <div className="flex justify-between mb-1">
-                  <p><span className="text-indigo-600 font-medium">Generated:</span> {researchDate}</p>
-                  <p><span className="text-indigo-600 font-medium">Model:</span> {report ? "mistralai/Mistral-7B-Instruct-v0.2" : "N/A"}</p>
-                </div>
-                <p className="text-center mt-2 text-indigo-500 italic">This research summary was generated using AI and should be verified with additional sources for critical applications.</p>
+          {/* Dynamic Content */}
+          <div className="h-[calc(90vh-5rem)] overflow-y-auto">
+            {currentResults ? (
+              <DynamicResearchResults
+                query={currentResearchTopic}
+                results={currentResults}
+                onFollowupQuestion={handleFollowUpQuestion}
+              />
+            ) : (
+              <div className="p-6 text-center">
+                <p className="text-gray-500">No research data available</p>
               </div>
-            </div>
-          </div>
-          
-          <div className="bg-gray-50 px-8 py-4 flex justify-between">
-            <div>
-              <button                onClick={() => {
-                  // Copy full report to clipboard
-                  navigator.clipboard.writeText(report)
-                    .then(() => {
-                      const notification = document.createElement('div');
-                      notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg z-50 animate-fadeIn';
-                      notification.textContent = 'Full report copied!';
-                      document.body.appendChild(notification);
-                      setTimeout(() => {
-                        notification.style.animation = 'fadeOut 0.5s ease-out forwards';
-                        setTimeout(() => document.body.removeChild(notification), 500);
-                      }, 1500);
-                    })
-                    .catch(err => console.error("Could not copy text: ", err));
-                }}
-                className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors duration-200 flex items-center shadow-sm hover:shadow"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z" />
-                  <path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z" />
-                </svg>
-                Copy Full Report
-              </button>
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setModalIsOpen(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors duration-200 shadow-sm hover:shadow"
-              >
-                Close
-              </button>              <button
-                onClick={() => setModalIsOpen(false)}
-                className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                Return to Chat
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </Modal>
+  
     </div>
   );
 }
