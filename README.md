@@ -1,24 +1,81 @@
 # Open Deep Research Web
 
-A web application that leverages Together AI API to provide comprehensive research reports on any topic. It uses React for the frontend and FastAPI for the backend.
+A comprehensive AI-powered research assistant web application that leverages Together AI API to provide in-depth research reports on any topic. Features local Stable Diffusion image generation capabilities with intelligent caching on the D drive to save C drive space.
 
 ## Features
 
+### Frontend
 - Generate in-depth research reports on any topic
-- Automatic summary generation
 - Beautiful UI with pop-up modal for summaries
 - Detailed full reports with expandable sections
-- Responsive design
+- Responsive design with modern React components
+- Loading states and error handling
+- Timeout handling for API requests
+- Dynamic visualizations with Chart.js and Mermaid diagrams
+
+### Backend
+- FastAPI server with CORS support
+- Integration with Together AI API for comprehensive research
+- **Local Stable Diffusion for image generation**
+- Intelligent prompt refinement for better images
+- Automatic fallback to Pollinations.ai if local generation fails
+- 10-minute timeout support for complex operations
+- Python 3.8 compatibility with asyncio optimizations
+- Comprehensive research report generation
+- Summarization capabilities
+- Robust error handling and fallback responses
+
+## Quick Start
+
+1. Simply run the `start_app.bat` file to start both the frontend and backend
+2. Alternatively, run the PowerShell script: `.\start_complete.ps1` 
+3. Access the application at `http://localhost:3000`
+
+## D Drive Installation
+
+All models, caches, and temporary files are now configured to use the D drive instead of C drive. The following locations are used:
+
+- `D:\ai website\open-deep-research-web\huggingface_cache` - HuggingFace model cache
+- `D:\ai website\open-deep-research-web\torch_cache` - PyTorch cache
+- `D:\ai website\open-deep-research-web\transformers_cache` - Transformers models
+- `D:\ai website\open-deep-research-web\xdg_cache` - General Python cache
+- `D:\ai website\open-deep-research-web\pip_cache` - PIP package cache
+- `D:\ai website\open-deep-research-web\npm_cache` - NPM package cache
+
+To clean up your C drive, use the provided `clean_c_drive.bat` script.
+
+## Documentation
+
+- [Stable Diffusion Quickstart Guide](./STABLE_DIFFUSION_QUICKSTART.md)
+- [Detailed Stable Diffusion Setup](./STABLE_DIFFUSION_README.md)
+- [D Drive Installation Guide](./D_DRIVE_INSTALL.md)
 
 ## Technology Stack
 
+<<<<<<< HEAD
+### Frontend
+- React
+- Tailwind CSS with Typography plugin
+- React Modal
+- Heroicons
+
+=======
+>>>>>>> origin/main
 ### Backend
 - FastAPI
 - Together AI API
-- Python 3.12
-- Pydantic for data validation
-- Docker for containerization
+- Stable Diffusion (diffusers library)
+- PyTorch
+- Python 3.8+
 
+<<<<<<< HEAD
+## Requirements
+
+- Python 3.8+
+- Node.js (v14+)
+- PyTorch
+- CUDA-compatible GPU (recommended for faster image generation)
+=======
 ### Frontend
 - React
 - Tailwind CSS with Typography plugin
@@ -67,6 +124,7 @@ cd open-deep-research-web
    ```powershell
    pip install fastapi uvicorn pydantic PyYAML requests
    ```
+>>>>>>> origin/main
 
 5. **Set up your API key**:
   
