@@ -87,6 +87,10 @@ class FollowUpRequest(BaseModel):
     question: str
     original_research: Dict[str, Any]
 
+# Load configuration
+with open("configs/open_deep_researcher_config.yaml") as f:
+    config = yaml.safe_load(f)
+
 class ImageRequest(BaseModel):
     prompt: str
     negative_prompt: str = None
